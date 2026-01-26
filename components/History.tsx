@@ -83,7 +83,7 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 font-bold text-indigo-600">
+                    <div className="flex items-center justify-end gap-2 font-bold" style={{ color: '#d9a441' }}>
                       R$ {sale.total.toFixed(2)}
                       <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>

@@ -84,7 +84,9 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
           <input
             type="text"
             placeholder="Pesquisar produto ou bipar código..."
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-lg"
+            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 shadow-sm focus:outline-none text-lg"
+            onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+            onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -95,9 +97,11 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             <button
               key={product.id}
               onClick={() => addToCart(product)}
-              className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 transition-all text-left"
+              className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-amber-400 hover:ring-1 transition-all text-left"
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d9a441'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
             >
-              <div className="text-xs font-semibold text-indigo-600 mb-1">{product.category}</div>
+              <div className="text-xs font-semibold mb-1" style={{ color: '#48733e' }}>{product.category}</div>
               <div className="font-bold text-slate-800 line-clamp-2 min-h-[3rem]">{product.name}</div>
               <div className="mt-2 flex justify-between items-center">
                 <span className="text-lg font-extrabold text-slate-900">R$ {product.price.toFixed(2)}</span>
@@ -122,10 +126,10 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
 
       {/* Cart / Summary */}
       <div className="w-full md:w-96 flex flex-col bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-        <div className="p-6 bg-slate-900 text-white flex items-center gap-3">
+        <div className="p-6 text-white flex items-center gap-3" style={{ backgroundColor: '#48733e' }}>
           <ShoppingCart />
           <h3 className="text-xl font-bold">Carrinho</h3>
-          <span className="ml-auto bg-indigo-500 text-xs px-2 py-1 rounded-full">{cart.length} itens</span>
+          <span className="ml-auto text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#d9a441', color: '#48733e' }}>{cart.length} itens</span>
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-3 min-h-[300px]">
@@ -159,21 +163,24 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setPaymentMethod('card')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'card' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'card' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'card' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <CreditCard size={18} />
                 <span className="text-[10px] font-bold uppercase">Cartão</span>
               </button>
               <button
                 onClick={() => setPaymentMethod('cash')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'cash' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'cash' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'cash' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <Banknote size={18} />
                 <span className="text-[10px] font-bold uppercase">Dinheiro</span>
               </button>
               <button
                 onClick={() => setPaymentMethod('pix')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'pix' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'pix' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'pix' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <QrCode size={18} />
                 <span className="text-[10px] font-bold uppercase">Pix</span>
@@ -188,12 +195,15 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             </div>
             <div className="flex justify-between items-end">
               <span className="text-xl font-bold text-slate-900">Total</span>
-              <span className="text-3xl font-black text-indigo-600">R$ {total.toFixed(2)}</span>
+              <span className="text-3xl font-black" style={{ color: '#d9a441' }}>R$ {total.toFixed(2)}</span>
             </div>
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 disabled:bg-slate-200 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2"
+              style={{ backgroundColor: '#d9a441' }}
+              onMouseEnter={(e) => { if (!cart.length) return; e.currentTarget.style.backgroundColor = '#c99338'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#d9a441'; }}
             >
               FINALIZAR VENDA
             </button>

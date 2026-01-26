@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, Package, History, Sparkles, LogOut, Menu, X, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, History, LogOut, Menu, X, User as UserIcon } from 'lucide-react';
 import { View, User } from '../types';
 
 interface LayoutProps {
@@ -16,10 +16,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
 
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
-    { id: 'pos', label: 'Vendas (POS)', icon: ShoppingCart, roles: ['ADMIN', 'SALES'] },
+    { id: 'pos', label: 'Vendas', icon: ShoppingCart, roles: ['ADMIN', 'SALES'] },
     { id: 'inventory', label: 'Estoque', icon: Package, roles: ['ADMIN'] },
     { id: 'history', label: 'Relatórios', icon: History, roles: ['ADMIN', 'SALES'] },
-    { id: 'ai', label: 'Insights AI', icon: Sparkles, roles: ['ADMIN'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(user.role));
@@ -27,12 +26,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-indigo-950 text-white border-r border-white/5">
+      <aside className="hidden md:flex flex-col w-64 text-white border-r border-white/5" style={{ backgroundColor: '#48733e' }}>
         <div className="p-6 flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
-            <ShoppingCart className="text-white w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">Convenience<span className="text-indigo-400">Flow</span></h1>
+          <img src="/logo.png" alt="Logo" className="w-10 h-10" />
+          <h1 className="text-xl font-bold tracking-tight">Conveniência    <span style={{ color: '#d9a441' }}>JAJA</span></h1>
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-1">
@@ -44,9 +41,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
                 onClick={() => onNavigate(item.id as View)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   activeView === item.id 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                    : 'text-indigo-200 hover:bg-white/5'
+                    ? 'text-white shadow-lg' 
+                    : 'text-white/70 hover:bg-white/5'
                 }`}
+                style={activeView === item.id ? { backgroundColor: '#d9a441', color: '#48733e' } : { backgroundColor: 'transparent' }}
               >
                 <Icon size={20} />
                 <span className="font-medium">{item.label}</span>
@@ -57,12 +55,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
 
         <div className="p-4 border-t border-white/10 bg-black/20">
           <div className="flex items-center gap-3 px-4 py-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#d9a441' }}>
               <UserIcon size={20} />
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold truncate">{user.name}</p>
-              <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">{user.role}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#d9a441' }}>{user.role}</p>
             </div>
           </div>
           <button 
@@ -76,7 +74,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-indigo-950 text-white p-4 flex justify-between items-center z-50">
+      <div className="md:hidden fixed top-0 left-0 right-0 text-white p-4 flex justify-between items-center z-50" style={{ backgroundColor: '#48733e' }}>
         <h1 className="text-lg font-bold">ConvenienceFlow</h1>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -85,7 +83,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-indigo-950 text-white z-40 flex flex-col pt-20">
+        <div className="md:hidden fixed inset-0 text-white z-40 flex flex-col pt-20" style={{ backgroundColor: '#48733e' }}>
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -110,8 +108,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pt-16 md:pt-0">
-        <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <main className="flex-1 pt-16 md:pt-0">
+        <div className="max-w-5xl mx-auto p-7 md:p-3">
           {children}
         </div>
       </main>

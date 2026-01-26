@@ -23,7 +23,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ products, sales }) => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="text-center space-y-4 py-8">
-        <div className="inline-flex p-4 rounded-3xl bg-indigo-100 text-indigo-600">
+        <div className="inline-flex p-4 rounded-3xl" style={{ backgroundColor: 'rgba(217, 164, 65, 0.2)', color: '#d9a441' }}>
           <BrainCircuit size={48} />
         </div>
         <h2 className="text-4xl font-black text-slate-900">Insights Inteligentes</h2>
@@ -50,7 +50,10 @@ const AIInsights: React.FC<AIInsightsProps> = ({ products, sales }) => {
           </div>
           <button
             onClick={generateInsights}
-            className="w-full md:w-auto px-12 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xl transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 mx-auto"
+            className="w-full md:w-auto px-12 py-5 text-white rounded-2xl font-bold text-xl transition-all shadow-xl flex items-center justify-center gap-3 mx-auto"
+            style={{ backgroundColor: '#d9a441', boxShadow: '0 20px 25px rgba(217, 164, 65, 0.2)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#c99338'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#d9a441'; }}
           >
             <Sparkles size={24} />
             Gerar Análise Estratégica
@@ -60,7 +63,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ products, sales }) => {
 
       {loading && (
         <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-xl flex flex-col items-center justify-center gap-6">
-          <Loader2 size={64} className="text-indigo-600 animate-spin" />
+          <Loader2 size={64} className="animate-spin" style={{ color: '#d9a441' }} />
           <div className="text-center">
             <p className="text-xl font-bold text-slate-900">Analisando dados da loja...</p>
             <p className="text-slate-500">Isso pode levar alguns segundos.</p>
@@ -70,18 +73,21 @@ const AIInsights: React.FC<AIInsightsProps> = ({ products, sales }) => {
 
       {analysis && !loading && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-indigo-900 text-white p-8 rounded-3xl shadow-xl prose prose-invert max-w-none">
+          <div className="text-white p-8 rounded-3xl shadow-xl prose prose-invert max-w-none" style={{ backgroundColor: '#48733e' }}>
              <div className="flex items-center gap-3 mb-6">
-               <Sparkles className="text-indigo-300" />
+               <Sparkles className="text-amber-300" />
                <h3 className="text-2xl font-bold m-0">Recomendações da AI</h3>
              </div>
-             <div className="text-indigo-100 leading-relaxed whitespace-pre-wrap">
+             <div className="leading-relaxed whitespace-pre-wrap" style={{ color: '#f5f2ea' }}>
                {analysis}
              </div>
           </div>
           <button
             onClick={() => setAnalysis(null)}
-            className="w-full py-4 text-slate-500 font-bold hover:text-indigo-600 transition-colors"
+            className="w-full py-4 font-bold transition-colors"
+            style={{ color: '#d9a441' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#c99338'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#d9a441'; }}
           >
             Limpar e refazer análise
           </button>

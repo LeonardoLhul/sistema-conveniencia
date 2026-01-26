@@ -61,7 +61,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
         </div>
         <button 
           onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
+          className="flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
+          style={{ backgroundColor: '#d9a441' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#c99338'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#d9a441'; }}
         >
           <Plus size={20} />
           Novo Produto
@@ -75,7 +78,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
             <input
               type="text"
               placeholder="Buscar por nome ou código..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none text-sm"
+              onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -128,7 +133,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => handleEdit(product)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                        <button onClick={() => handleEdit(product)} className="p-2 rounded-lg transition-colors" style={{ color: '#d9a441', backgroundColor: 'rgba(217, 164, 65, 0.1)' }}>
                           <Edit size={18} />
                         </button>
                         <button onClick={() => onDeleteProduct(product.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
@@ -154,16 +159,19 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 bg-indigo-900 text-white flex justify-between items-center">
-              <h3 className="text-xl font-bold">{editingId ? 'Editar Produto' : 'Adicionar Produto'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-indigo-200 hover:text-white">&times;</button>
+            <div className="p-6 text-white flex justify-between items-center" style={{ backgroundColor: '#48733e' }}>
+              <h3 className="text-lg font-bold">{editingId ? 'Editar Produ
+              to' : 'Novo Produto'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-white hover:text-white/80" style={{ color: 'inherit' }}>&times;</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase">Nome do Produto</label>
                 <input
                   required
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
+                  onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                 />
@@ -175,7 +183,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                     type="number"
                     step="0.01"
                     required
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
+                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
                   />
@@ -185,7 +195,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                   <input
                     type="number"
                     required
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
+                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.stock}
                     onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value)})}
                   />
@@ -197,7 +209,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                   <input
                     type="number"
                     required
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
+                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.minStock}
                     onChange={(e) => setFormData({...formData, minStock: parseInt(e.target.value)})}
                   />
@@ -205,7 +219,9 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Categoria</label>
                   <select
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none bg-white"
+                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.category}
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
                   >
@@ -222,14 +238,20 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                 <label className="text-xs font-bold text-slate-500 uppercase">Código de Barras</label>
                 <input
                   required
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none font-mono"
+                  onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                   value={formData.barcode}
                   onChange={(e) => setFormData({...formData, barcode: e.target.value})}
                 />
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50">Cancelar</button>
-                <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100">Salvar</button>
+                <button type="submit" className="flex-1 py-3 text-white rounded-xl font-bold shadow-lg"
+                  style={{ backgroundColor: '#d9a441' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#c99338'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#d9a441'; }}
+                >Salvar</button>
               </div>
             </form>
           </div>

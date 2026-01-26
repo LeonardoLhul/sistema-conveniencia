@@ -5,7 +5,6 @@ import Dashboard from './components/Dashboard';
 import POS from './components/POS';
 import Inventory from './components/Inventory';
 import History from './components/History';
-import AIInsights from './components/AIInsights';
 import Login from './components/Login';
 import { View, Product, Sale, User } from './types';
 import { INITIAL_PRODUCTS } from './constants';
@@ -13,8 +12,9 @@ import { INITIAL_PRODUCTS } from './constants';
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('dashboard');
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Carregar dados e sessão
   useEffect(() => {
@@ -38,6 +38,8 @@ const App: React.FC = () => {
     if (savedSales) {
       setSales(JSON.parse(savedSales));
     }
+    
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -92,6 +94,17 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: '#f5f2ea' }}>
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300" style={{ borderTopColor: '#d9a441' }}></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   const renderView = () => {
     // Verificação de segurança adicional para o render
     const isAdmin = user.role === 'ADMIN';
@@ -101,7 +114,6 @@ const App: React.FC = () => {
       case 'pos': return <POS products={products} onCompleteSale={handleCompleteSale} />;
       case 'inventory': return isAdmin ? <Inventory products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct} /> : null;
       case 'history': return <History sales={user.role === 'ADMIN' ? sales : sales.filter(s => s.userId === user.id)} />;
-      case 'ai': return isAdmin ? <AIInsights products={products} sales={sales} /> : null;
       default: return <POS products={products} onCompleteSale={handleCompleteSale} />;
     }
   };
