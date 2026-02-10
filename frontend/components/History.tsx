@@ -1,23 +1,85 @@
-
 import React from 'react';
 import { FileText, Download, Calendar, ArrowRight } from 'lucide-react';
 import { Sale } from '../types';
+import { apiClient } from '../services/api';
 
-interface HistoryProps {
-  sales: Sale[];
-}
+const History: React.FC = () => {
+  const [sales, setSales] = React.useState<Sale[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-const History: React.FC<HistoryProps> = ({ sales }) => {
-  const sortedSales = [...sales].sort((a, b) => b.timestamp - a.timestamp);
+  React.useEffect(() => {
+    async function loadSales() {
+      try {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          console.error('❌ Token não encontrado');
+          setLoading(false);
+          return;
+        }
+
+        const response = await apiClient.getSalesReport(
+          '2024-01-01',
+          '2025-12-31',
+          token
+        );
+
+        console.log('🔍 RESPOSTA DO BACKEND:', response);
+
+        if (response.success) {
+          setSales(response.data);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar vendas:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSales();
+  }, []);
+
+  const sortedSales = [...sales].sort(
+    (a, b) =>
+      new Date(b.timestamp).getTime() -
+      new Date(a.timestamp).getTime()
+  );
 
   const getPaymentIcon = (method: string) => {
-    switch (method) {
-      case 'card': return '💳';
-      case 'cash': return '💵';
-      case 'pix': return '📱';
-      default: return '💰';
+    switch (method.toUpperCase()) {
+      case 'DÉBITO':
+        return '💳';
+      case 'CRÉDITO':
+        return '💳';
+      case 'DINHEIRO':
+        return '💵';
+      case 'PIX':
+        return '📱';
+      default:
+        return '💰';
     }
   };
+
+  const mostUsedPaymentMethod = React.useMemo(() => {
+    if (!sales.length) return null;
+
+    const count = sales.reduce((acc, sale) => {
+      acc[sale.paymentMethod] = (acc[sale.paymentMethod] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.keys(count).reduce((a, b) =>
+      count[a] > count[b] ? a : b
+    );
+  }, [sales]);
+
+  if (loading) {
+    return (
+      <div className="py-24 text-center text-slate-400">
+        Carregando relatório de vendas...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,20 +105,22 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-slate-500 text-sm font-medium mb-1">Mais Utilizado</p>
-          <p className="text-2xl font-bold text-slate-900">💳 Cartão</p>
+          <p className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            {mostUsedPaymentMethod ? (<>{getPaymentIcon(mostUsedPaymentMethod)} {mostUsedPaymentMethod} </>) : ('—')}
+          </p>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+            <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 font-semibold">Data / Hora</th>
-                <th className="px-6 py-4 font-semibold">ID Transação</th>
-                <th className="px-6 py-4 font-semibold">Itens</th>
-                <th className="px-6 py-4 font-semibold">Pagamento</th>
-                <th className="px-6 py-4 font-semibold text-right">Total</th>
+                <th className="px-6 py-4 font-semibold text-center">Data / Hora</th>
+                <th className="px-6 py-4 font-semibold text-center">ID Transação</th>
+                <th className="px-6 py-4 font-semibold text-center">Itens</th>
+                <th className="px-6 py-4 font-semibold text-center">Pagamento</th>
+                <th className="px-6 py-4 font-semibold text-center">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -68,21 +132,21 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
                       {new Date(sale.timestamp).toLocaleString('pt-BR')}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2 text-center">
                     <span className="font-mono text-xs text-slate-500 uppercase">{sale.id}</span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2 text-center">
                     <div className="text-slate-600 text-sm">
                       {sale.items.length} itens {sale.items.length > 0 && `(${sale.items[0].name}${sale.items.length > 1 ? '...' : ''})`}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2 text-center">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-tight">
                       <span>{getPaymentIcon(sale.paymentMethod)}</span>
                       {sale.paymentMethod}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-2 text-center">
                     <div className="flex items-center justify-end gap-2 font-bold" style={{ color: '#d9a441' }}>
                       R$ {sale.total.toFixed(2)}
                       <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />

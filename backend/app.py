@@ -3,12 +3,16 @@ from flask_cors import CORS
 from db import get_connection
 from auth import authenticate_user, create_user, get_user_by_token
 from products import get_all_products, get_product_by_id, create_product, update_product, delete_product, search_products
+from report import generate_sales_report
 from stock import get_stock_by_product, get_all_stock, update_stock, add_stock, remove_stock, set_min_quantity, get_low_stock_products
 from init_db import init_database
 from functools import wraps
 
 app = Flask(__name__)
-CORS(app)
+CORS(app,
+    resources={r"/api/*": {"origins": "http://localhost:3000"}},
+    supports_credentials=True
+     )
 
 # Inicializar banco de dados na primeira execução
 init_database()
@@ -18,6 +22,7 @@ def require_token(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         token = request.headers.get('Authorization')
+        print("AUTH HEADER:", token)  # 👈 DEBUG
         if not token:
             return jsonify({"success": False, "message": "Token não fornecido"}), 401
         
@@ -242,6 +247,43 @@ def set_product_min_quantity(product_id):
     
     return jsonify(result), (200 if result['success'] else 404)
 
+
+# ============ RELATÓRIOS ============
+
+@app.route("/api/reports/sales", methods=["GET"])
+@require_token
+def get_sales_report():
+    """Gera relatório de vendas por período"""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not start_date or not end_date:
+        return jsonify({"success": False, "message": "Datas de início e fim são obrigatórias"}), 400
+        
+    result = generate_sales_report(start_date, end_date)
+    
+    if result['success']:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
 
+@app.route("/api/sales/report", methods=["GET", "OPTIONS"])
+@require_token
+def sales_report_front():
+    if request.method == "OPTIONS":
+        return "", 200
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    if not start or not end:
+        return jsonify({
+            "success": False,
+            "message": "Parâmetros start e end são obrigatórios"
+        }), 400
+
+    result = generate_sales_report(start, end)
+    return jsonify(result), (200 if result["success"] else 500)

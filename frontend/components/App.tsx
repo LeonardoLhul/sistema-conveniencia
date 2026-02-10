@@ -70,7 +70,7 @@ const App: React.FC = () => {
   const handleLogin = (loggedUser: User) => {
     setUser(loggedUser);
     localStorage.setItem('user_session', JSON.stringify(loggedUser));
-    setView(loggedUser.role === 'ADMIN' ? 'dashboard' : 'pos');
+    setView(loggedUser.role === 'ADMIN' || 'GERENTE' ? 'dashboard' : 'pos');
     
     // Buscar produtos do backend após login
     loadProducts();
@@ -191,12 +191,14 @@ const App: React.FC = () => {
   const renderView = () => {
     // Verificação de segurança adicional para o render
     const isAdmin = user.role === 'ADMIN';
+    const isGerente = user.role === 'GERENTE';
+    const isCaixa = user.role === 'CAIXA';
 
     switch (view) {
-      case 'dashboard': return isAdmin ? <Dashboard products={products} sales={sales} /> : <POS products={products} onCompleteSale={handleCompleteSale} />;
+      case 'dashboard': return isAdmin || isGerente ? <Dashboard products={products} sales={sales} /> : <POS products={products} onCompleteSale={handleCompleteSale} />;
       case 'pos': return <POS products={products} onCompleteSale={handleCompleteSale} />;
-      case 'inventory': return isAdmin ? <Inventory products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct} /> : null;
-      case 'history': return <History sales={user.role === 'ADMIN' ? sales : sales.filter(s => s.userId === user.id)} />;
+      case 'inventory': return isAdmin || isGerente ? <Inventory products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct} /> : null;
+      case 'history': return <History sales={user.role === 'ADMIN' || user.role === 'CAIXA' ? sales : sales.filter(s => s.userId === user.id)} />;
       default: return <POS products={products} onCompleteSale={handleCompleteSale} />;
     }
   };

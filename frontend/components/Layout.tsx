@@ -15,10 +15,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const allNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
-    { id: 'pos', label: 'Vendas', icon: ShoppingCart, roles: ['ADMIN', 'SALES'] },
-    { id: 'inventory', label: 'Estoque', icon: Package, roles: ['ADMIN'] },
-    { id: 'history', label: 'Relatórios', icon: History, roles: ['ADMIN', 'SALES'] },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'GERENTE'] },
+    { id: 'pos', label: 'Vendas', icon: ShoppingCart, roles: ['ADMIN', 'GERENTE','CAIXA'] },
+    { id: 'inventory', label: 'Estoque', icon: Package, roles: ['ADMIN', 'GERENTE'] },
+    { id: 'history', label: 'Relatórios', icon: History, roles: ['ADMIN', 'GERENTE', 'CAIXA'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(user.role));
@@ -75,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 text-white p-4 flex justify-between items-center z-50" style={{ backgroundColor: '#48733e' }}>
-        <h1 className="text-lg font-bold">ConvenienceFlow</h1>
+        <h1 className="text-lg font-bold">Conveniência <span style={{ color: '#d9a441' }}> JAJA</span></h1>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>

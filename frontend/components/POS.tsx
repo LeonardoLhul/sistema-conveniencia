@@ -11,7 +11,7 @@ interface POSProps {
 const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<SaleItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'DINHEIRO' | 'CRÉDITO' | 'PIX' | 'DÉBITO'> ('credit');
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return [];
@@ -160,27 +160,36 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
         <div className="p-6 border-t border-slate-100 space-y-6">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-500">Forma de Pagamento</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               <button
-                onClick={() => setPaymentMethod('card')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'card' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
-                style={paymentMethod === 'card' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+                onClick={() => setPaymentMethod('DÉBITO')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'DÉBITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'DÉBITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <CreditCard size={18} />
-                <span className="text-[10px] font-bold uppercase">Cartão</span>
+                <span className="text-[10px] font-bold uppercase">Débito</span>
+              </button>
+               <button
+                onClick={() => setPaymentMethod('CRÉDITO')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'CRÉDITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'CRÉDITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+              >
+                <CreditCard size={18} />
+                <span className="text-[10px] font-bold uppercase">Crédito</span>
               </button>
               <button
-                onClick={() => setPaymentMethod('cash')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'cash' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
-                style={paymentMethod === 'cash' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+                onClick={() => setPaymentMethod('DINHEIRO')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'DINHEIRO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'DINHEIRO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
+                
                 <Banknote size={18} />
                 <span className="text-[10px] font-bold uppercase">Dinheiro</span>
               </button>
               <button
-                onClick={() => setPaymentMethod('pix')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'pix' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
-                style={paymentMethod === 'pix' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+                onClick={() => setPaymentMethod('PIX')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'PIX' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'PIX' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <QrCode size={18} />
                 <span className="text-[10px] font-bold uppercase">Pix</span>
