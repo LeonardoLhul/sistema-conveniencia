@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { FileText, Download, Calendar, ArrowRight } from 'lucide-react';
 import { Sale } from '../types';
 
@@ -7,8 +7,39 @@ interface HistoryProps {
 }
 
 const History: React.FC<HistoryProps> = ({ sales }) => {
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(3, 0, 0, 0);
+    return d;
+  });
 
-  const sortedSales = [...sales].sort((a, b) => b.timestamp - a.timestamp);
+  // Business day helper: store's business day starts at 03:00
+  const BUSINESS_DAY_START_HOUR = 3;
+
+  const getBusinessDate = (dt: Date) => {
+    const shifted = new Date(dt.getTime() - BUSINESS_DAY_START_HOUR * 60 * 60 * 1000);
+    return new Date(shifted.getFullYear(), shifted.getMonth(), shifted.getDate());
+  };
+
+  const isSameBusinessDay = (a: Date, b: Date) => {
+    const da = getBusinessDate(a);
+    const db = getBusinessDate(b);
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+  };
+
+  const formatDateInput = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const filteredSales = useMemo(() => 
+    sales.filter(s => isSameBusinessDay(new Date(s.timestamp), selectedDate)),
+    [sales, selectedDate]
+  );
+
+  const sortedSales = [...filteredSales].sort((a, b) => b.timestamp - a.timestamp);
 
   const getPaymentIcon = (method: string) => {
     switch (method.toUpperCase()) {
@@ -25,20 +56,6 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
     }
   };
 
-  const mostUsedPaymentMethod = React.useMemo(() => {
-    if (!sales.length) return null;
-
-    const count = sales.reduce((acc, sale) => {
-      const method = sale.paymentMethod.toUpperCase(); // NORMALIZA AQUI
-      acc[method] = (acc[method] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.keys(count).reduce((a, b) =>
-      count[a] > count[b] ? a : b
-    );
-  }, [sales]);
-
   return (
     <div className="space-y-6">
       {/* HEADER */}
@@ -52,10 +69,21 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 font-medium transition-all shadow-sm">
-          <Download size={18} />
-          Exportar CSV
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-slate-500 font-medium">Data:</label>
+            <input
+              type="date"
+              className="px-3 py-2 rounded-lg border border-slate-200"
+              value={formatDateInput(selectedDate)}
+              onChange={(e) => {
+                const [y, m, d] = e.target.value.split('-');
+                const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), 3, 0, 0, 0);
+                setSelectedDate(date);
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* CARDS */}
@@ -63,10 +91,10 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
 
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-slate-500 text-sm font-medium mb-1">
-            Total de Hoje
+            Total de {selectedDate.toLocaleDateString()}
           </p>
           <p className="text-2xl font-bold text-slate-900">
-            R$ {sales.reduce((sum, s) => sum + s.total, 0).toFixed(2)}
+            R$ {filteredSales.reduce((sum, s) => sum + s.total, 0).toFixed(2)}
           </p>
         </div>
 
@@ -75,7 +103,7 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
             Vendas Concluídas
           </p>
           <p className="text-2xl font-bold text-slate-900">
-            {sales.length}
+            {filteredSales.length}
           </p>
         </div>
 
@@ -84,14 +112,26 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
             Mais Utilizado
           </p>
           <p className="text-2xl font-bold text-slate-900 flex items-center gap-2 uppercase">
-            {mostUsedPaymentMethod ? (
-              <>
-                {getPaymentIcon(mostUsedPaymentMethod)}
-                {mostUsedPaymentMethod}
-              </>
-            ) : (
-              '—'
-            )}
+            {(() => {
+              const count = filteredSales.reduce((acc, sale) => {
+                const method = sale.paymentMethod.toUpperCase();
+                acc[method] = (acc[method] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>);
+
+              const mostUsed = Object.keys(count).length > 0
+                ? Object.keys(count).reduce((a, b) => count[a] > count[b] ? a : b)
+                : null;
+
+              return mostUsed ? (
+                <>
+                  {getPaymentIcon(mostUsed)}
+                  {mostUsed}
+                </>
+              ) : (
+                '—'
+              );
+            })()}
           </p>
         </div>
 

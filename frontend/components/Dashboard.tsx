@@ -10,7 +10,11 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(3, 0, 0, 0);
+    return d;
+  });
 
   // Business day helper: store's business day starts at 03:00
   const BUSINESS_DAY_START_HOUR = 3;
@@ -75,7 +79,11 @@ const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
             type="date"
             className="px-3 py-2 rounded-lg border border-slate-200"
             value={formatDateInput(selectedDate)}
-            onChange={(e) => setSelectedDate(new Date(`${e.target.value}T00:00`))}
+            onChange={(e) => {
+              const [y, m, d] = e.target.value.split('-');
+              const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), 3, 0, 0, 0);
+              setSelectedDate(date);
+            }}
           />
         </div>
       </header>

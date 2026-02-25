@@ -1,4 +1,34 @@
 from db import get_connection
+from datetime import datetime
+
+
+def to_epoch_ms(ts):
+    """Converte diferentes formatos de timestamp para milliseconds since epoch (int).
+    Aceita datetime, string no formato MySQL '%Y-%m-%d %H:%M:%S' ou ISO, ou inteiro já em ms/s.
+    """
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float)):
+        # presumir que já são ms se maior que 1e12, senão segundos
+        val = int(ts)
+        if val > 1e12:
+            return val
+        if val > 1e9:
+            return val * 1000
+        return val
+    if hasattr(ts, 'timestamp'):
+        return int(ts.timestamp() * 1000)
+    if isinstance(ts, str):
+        # tentar formatos comuns
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%d"):
+            try:
+                dt = datetime.strptime(ts, fmt)
+                return int(dt.timestamp() * 1000)
+            except Exception:
+                continue
+        # último recurso: deixar como None
+        return None
+    return None
 
 def get_all_sales():
     """Retorna todas as vendas"""
@@ -30,7 +60,7 @@ def get_all_sales():
                 sales[sid] = {
                     "id": sid,
                     "userId": row['userId'],
-                    "timestamp": (row['timestamp'].timestamp() * 1000) if hasattr(row['timestamp'], 'timestamp') else row['timestamp'],
+                    "timestamp": to_epoch_ms(row['timestamp']),
                     "total": float(row['total']),
                     "paymentMethod": row['paymentMethod'],
                     "items": []
@@ -81,7 +111,7 @@ def get_sales_by_user(user_id):
                 sales[sid] = {
                     "id": sid,
                     "userId": row['userId'],
-                    "timestamp": (row['timestamp'].timestamp() * 1000) if hasattr(row['timestamp'], 'timestamp') else (row['timestamp'].timestamp() * 1000) if hasattr(row['timestamp'], 'timestamp') else row['timestamp'],
+                    "timestamp": to_epoch_ms(row['timestamp']),
                     "total": float(row['total']),
                     "paymentMethod": row['paymentMethod'],
                     "items": []
@@ -106,13 +136,13 @@ def create_sale(user_id, timestamp, total, payment_method, items):
     cursor = conn.cursor()
     
     try:
-        # note: tabela usa snake_case e criada_id gera timestamp automaticamente
+        # note: tabela usa snake_case; usamos o timestamp fornecido (não deixamos auto-generar)
         cursor.execute("""
-            INSERT INTO sales (user_id, total, payment_method)
-            VALUES (%s, %s, %s)
-        """, (user_id, total, payment_method))
+            INSERT INTO sales (user_id, created_id, total, payment_method)
+            VALUES (%s, %s, %s, %s)
+        """, (user_id, timestamp, total, payment_method))
         sale_id = cursor.lastrowid
-        print(f"[DEBUG] created sale id={sale_id} user_id={user_id} total={total}")
+        print(f"[DEBUG] created sale id={sale_id} user_id={user_id} total={total} timestamp={timestamp}")
         
         # assumir que items contem productId, quantity, price (pode ser dict ou object)
         for item in items:
