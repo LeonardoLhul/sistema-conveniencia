@@ -15,47 +15,37 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
 
   const handleFormSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (!name || !password) {
-    setError('Por favor, preencha todos os campos.');
-    return;
-  }
-
-  setError('');
-  setIsLoading(true);
-
-  try {
-    const response = await apiClient.login(name, password);
-
-    if (!response.success || !response.user) {
-      setError(response.message || 'Erro ao fazer login');
+    e.preventDefault();
+    if (!name || !password) {
+      setError('Por favor, preencha todos os campos.');
       return;
     }
 
-    // 1️⃣ salva token
-    localStorage.setItem('token', response.token);
+    setError('');
+    setIsLoading(true);
 
-    // 2️⃣ monta usuário
-    const user: User = {
-      id: response.user.id.toString(),
-      name: response.user.name,
-      email: `${response.user.name}@loja.com`,
-      role: response.user.role,
-    };
+    try {
+      const response = await apiClient.login(name, password);
 
-    // 3️⃣ salva usuário
-    localStorage.setItem('user', JSON.stringify(user));
+      if (response.success && response.user) {
+        const user: User = {
+          id: response.user.id.toString(),
+          name: response.user.name,
+          email: `${response.user.name}@loja.com`,
+          role: response.user.role,
+          token: response.token,
+        };
 
-    // 4️⃣ avisa a aplicação
-    onLogin(user);
-
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Erro ao conectar ao servidor');
-  } finally {
-    setIsLoading(false);
-  }
-};
+        onLogin(user);
+      } else {
+        setError(response.message || 'Erro ao fazer login');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao conectar ao servidor');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">

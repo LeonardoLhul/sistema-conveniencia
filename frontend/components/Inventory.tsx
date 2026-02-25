@@ -2,15 +2,25 @@
 import React, { useState } from 'react';
 import { Search, Plus, Edit, Trash2, ArrowUpRight, ArrowDownRight, Package } from 'lucide-react';
 import { Product } from '../types';
+import { useEffect } from 'react';
 
 interface InventoryProps {
   products: Product[];
-  onUpdateProduct: (product: Product) => void;
-  onAddProduct: (product: Omit<Product, 'id'>) => void;
-  onDeleteProduct: (id: string) => void;
+  onUpdate: (product: Product) => void;
+  onAdd: (product: Omit<Product, 'id'>) => void;
+  onDelete: (id: string) => void;
 }
+const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDelete }) => {
 
-const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddProduct, onDeleteProduct }) => {
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data))
+      .catch(err => console.error(err));
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -18,31 +28,31 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Drinks',
+    category: '',
     price: 0,
     stock: 0,
     minStock: 5,
     barcode: ''
   });
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.barcode.includes(searchTerm)
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      onUpdateProduct({ ...formData, id: editingId });
+      onUpdate({ ...formData, id: editingId });
     } else {
-      onAddProduct(formData);
+      onAdd(formData);
     }
     setIsModalOpen(false);
     resetForm();
   };
 
   const resetForm = () => {
-    setFormData({ name: '', category: 'Drinks', price: 0, stock: 0, minStock: 5, barcode: '' });
+    setFormData({ name: '', category: '', price: 0, stock: 0, minStock: 5, barcode: '' });
     setEditingId(null);
   };
 
@@ -59,7 +69,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
           <h2 className="text-3xl font-bold text-slate-900">Controle de Estoque</h2>
           <p className="text-slate-500">Gerencie produtos e níveis de reposição.</p>
         </div>
-        <button 
+        <button
           onClick={() => { resetForm(); setIsModalOpen(true); }}
           className="flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md"
           style={{ backgroundColor: '#d9a441' }}
@@ -89,16 +99,6 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Produto</th>
-                <th className="px-6 py-4 font-semibold">Categoria</th>
-                <th className="px-6 py-4 font-semibold text-right">Preço</th>
-                <th className="px-6 py-4 font-semibold text-center">Em Estoque</th>
-                <th className="px-6 py-4 font-semibold text-center">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Ações</th>
-              </tr>
-            </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map(product => {
                 const isLow = product.stock <= product.minStock;
@@ -136,7 +136,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                         <button onClick={() => handleEdit(product)} className="p-2 rounded-lg transition-colors" style={{ color: '#d9a441', backgroundColor: 'rgba(217, 164, 65, 0.1)' }}>
                           <Edit size={18} />
                         </button>
-                        <button onClick={() => onDeleteProduct(product.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                        <button onClick={() => onDelete(product.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -172,7 +172,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                   onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
                   onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -186,7 +186,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                     onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
                     onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1">
@@ -198,7 +198,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                     onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
                     onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
@@ -212,24 +212,31 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                     onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
                     onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.minStock}
-                    onChange={(e) => setFormData({...formData, minStock: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, minStock: parseInt(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Categoria</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase">
+                    Categoria
+                  </label>
+
                   <select
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none bg-white"
-                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
-                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                    required
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
                     value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        category: e.target.value
+                      })
+                    }
                   >
-                    <option>Drinks</option>
-                    <option>Snacks</option>
-                    <option>Tobacco</option>
-                    <option>Personal Care</option>
-                    <option>Bakery</option>
-                    <option>Dairy</option>
+                    <option value="">Selecione uma categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.categoria}>
+                        {cat.categoria}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -241,7 +248,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProduct, onAddP
                   onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
                   onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                   value={formData.barcode}
-                  onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                 />
               </div>
               <div className="pt-4 flex gap-3">

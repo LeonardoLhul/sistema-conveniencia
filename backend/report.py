@@ -7,18 +7,18 @@ def generate_sales_report(start_date, end_date):
     try:
         cursor.execute("""
             SELECT
-                o.id,
-                o.created_id AS timestamp,
-                o.payment_method,
-                o.total,
+                s.id,
+                s.created_id AS timestamp,
+                s.payment_method AS payment_method,
+                s.total,
                 p.name AS product_name,
                 si.quantity,
-                si.unit_price
-            FROM orders o
-            JOIN sales_items si ON o.id = si.sale_id
+                si.price AS unit_price
+            FROM sales s
+            JOIN sales_items si ON s.id = si.sale_id
             JOIN products p ON p.id = si.product_id
-            WHERE o.created_id BETWEEN %s AND %s
-            ORDER BY o.created_id DESC
+            WHERE s.created_id BETWEEN %s AND %s
+            ORDER BY s.created_id DESC
         """, (start_date, end_date))
 
         rows = cursor.fetchall()

@@ -6,7 +6,7 @@ def inspect_tables():
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
 
-        tables = ['orders', 'order_items', 'products']
+        tables = ['sales', 'sales_items', 'products']
         
         for table in tables:
             print(f"\n--- Structure of table '{table}' ---")

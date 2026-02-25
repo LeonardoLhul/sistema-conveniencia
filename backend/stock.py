@@ -48,26 +48,25 @@ def get_all_stock():
         conn.close()
 
 def update_stock(product_id, quantity):
-    """Atualiza a quantidade em estoque"""
+    """Atualiza ou cria estoque de forma segura"""
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
         cursor.execute("""
-            UPDATE stock 
-            SET quantity = %s 
-            WHERE product_id = %s
-        """, (quantity, product_id))
-        
+            INSERT INTO stock (product_id, quantity, min_quantity)
+            VALUES (%s, %s, 0)
+            ON DUPLICATE KEY UPDATE
+                quantity = VALUES(quantity)
+        """, (product_id, quantity))
+
         conn.commit()
-        
-        if cursor.rowcount == 0:
-            return {"success": False, "message": "Estoque não encontrado"}
-        
+
         return {"success": True, "message": "Estoque atualizado com sucesso"}
     
     except Exception as e:
         return {"success": False, "message": str(e)}
+    
     finally:
         cursor.close()
         conn.close()
@@ -83,12 +82,20 @@ def add_stock(product_id, quantity):
             SET quantity = quantity + %s 
             WHERE product_id = %s
         """, (quantity, product_id))
-        
+
         conn.commit()
-        
+
         if cursor.rowcount == 0:
-            return {"success": False, "message": "Estoque não encontrado"}
-        
+            # tentar criar linha de estoque se não existir
+            try:
+                cursor.execute("""
+                    INSERT INTO stock (product_id, quantity, min_quantity) VALUES (%s, %s, %s)
+                """, (product_id, quantity, 0))
+                conn.commit()
+                return {"success": True, "message": "Estoque criado e adicionado com sucesso"}
+            except Exception as ie:
+                return {"success": False, "message": f"Estoque não encontrado e falha ao criar: {ie}"}
+
         return {"success": True, "message": "Estoque adicionado com sucesso"}
     
     except Exception as e:
@@ -131,26 +138,24 @@ def remove_stock(product_id, quantity):
         conn.close()
 
 def set_min_quantity(product_id, min_quantity):
-    """Define a quantidade mínima de estoque"""
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
         cursor.execute("""
-            UPDATE stock 
-            SET min_quantity = %s 
-            WHERE product_id = %s
-        """, (min_quantity, product_id))
-        
+            INSERT INTO stock (product_id, quantity, min_quantity)
+            VALUES (%s, 0, %s)
+            ON DUPLICATE KEY UPDATE
+                min_quantity = VALUES(min_quantity)
+        """, (product_id, min_quantity))
+
         conn.commit()
-        
-        if cursor.rowcount == 0:
-            return {"success": False, "message": "Estoque não encontrado"}
-        
-        return {"success": True, "message": "Quantidade mínima atualizada com sucesso"}
+
+        return {"success": True, "message": "Quantidade mínima definida com sucesso"}
     
     except Exception as e:
         return {"success": False, "message": str(e)}
+    
     finally:
         cursor.close()
         conn.close()

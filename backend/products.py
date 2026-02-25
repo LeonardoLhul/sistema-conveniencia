@@ -7,13 +7,24 @@ def get_all_products():
     
     try:
         cursor.execute("""
-            SELECT p.id, p.name, p.barcode, p.price, p.cost_price, p.active, p.created_at,
-                   s.quantity, s.min_quantity
-            FROM products p
-            LEFT JOIN stock s ON p.id = s.product_id
-            WHERE p.active = 1
-            ORDER BY p.name
-        """)
+    SELECT 
+        p.id, 
+        p.name, 
+        p.barcode, 
+        p.price, 
+        p.cost_price, 
+        p.active, 
+        p.created_at,
+        p.category_id,
+        c.categoria AS category,
+        s.quantity, 
+        s.min_quantity
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN stock s ON p.id = s.product_id
+    WHERE p.active = 1
+    ORDER BY p.name
+""")
         
         products = cursor.fetchall()
         return {"success": True, "data": products}
@@ -31,12 +42,23 @@ def get_product_by_id(product_id):
     
     try:
         cursor.execute("""
-            SELECT p.id, p.name, p.barcode, p.price, p.cost_price, p.active, p.created_at,
-                   s.quantity, s.min_quantity
-            FROM products p
-            LEFT JOIN stock s ON p.id = s.product_id
-            WHERE p.id = %s
-        """, (product_id,))
+    SELECT 
+        p.id, 
+        p.name, 
+        p.barcode, 
+        p.price, 
+        p.cost_price, 
+        p.active, 
+        p.created_at,
+        p.category_id,
+        c.categoria AS category,
+        s.quantity, 
+        s.min_quantity
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN stock s ON p.id = s.product_id
+    WHERE p.id = %s
+""", (product_id,))
         
         product = cursor.fetchone()
         
@@ -51,19 +73,40 @@ def get_product_by_id(product_id):
         cursor.close()
         conn.close()
 
-def create_product(name, barcode, price, cost_price=None, active=1):
-    """Cria um novo produto"""
+def create_product(name, barcode, price, cost_price=None, active=1, category_id=None, stock=None, min_quantity=None):
+
+    """Cria um novo produto e opcionalmente inicializa o estoque"""
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
         cursor.execute("""
-            INSERT INTO products (name, barcode, price, cost_price, active) 
-            VALUES (%s, %s, %s, %s, %s)
-        """, (name, barcode, price, cost_price, active))
+    INSERT INTO products (name, barcode, price, cost_price, active, category_id) 
+    VALUES (%s, %s, %s, %s, %s, %s)
+""", (name, barcode, price, cost_price, active, category_id))
         
         conn.commit()
         product_id = cursor.lastrowid
+
+        # Se informado, criar linha em stock
+        try:
+            qty = int(stock) if stock is not None else 0
+        except Exception:
+            qty = 0
+
+        try:
+            min_q = int(min_quantity) if min_quantity is not None else 0
+        except Exception:
+            min_q = 0
+
+        try:
+            cursor.execute("""
+                INSERT INTO stock (product_id, quantity, min_quantity) VALUES (%s, %s, %s)
+            """, (product_id, qty, min_q))
+            conn.commit()
+        except Exception:
+            # não falhar a criação do produto se a criação do estoque der problema
+            pass
         
         return {
             "success": True,
@@ -77,13 +120,20 @@ def create_product(name, barcode, price, cost_price=None, active=1):
         cursor.close()
         conn.close()
 
-def update_product(product_id, name=None, barcode=None, price=None, cost_price=None, active=None):
+def update_product(product_id, name=None, barcode=None, price=None, cost_price=None, active=None, category_id=None, category=None):
+
     """Atualiza um produto existente"""
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
-        # Verificar se o produto existe
+        # Se receber categoria como string (nome), resolver para category_id
+        if category is not None and category_id is None:
+            cursor.execute("SELECT id FROM categories WHERE categoria = %s", (category,))
+            cat_row = cursor.fetchone()
+            if cat_row:
+                category_id = cat_row[0]
+        
         cursor.execute("SELECT id FROM products WHERE id = %s", (product_id,))
         if not cursor.fetchone():
             return {"success": False, "message": f"Produto com ID {product_id} não encontrado"}
@@ -107,6 +157,10 @@ def update_product(product_id, name=None, barcode=None, price=None, cost_price=N
         if active is not None:
             updates.append("active = %s")
             params.append(active)
+
+        if category_id is not None:
+            updates.append("category_id = %s")
+            params.append(category_id)
         
         if not updates:
             return {"success": False, "message": "Nenhum campo para atualizar"}
@@ -162,13 +216,25 @@ def search_products(search_term):
     try:
         search_pattern = f"%{search_term}%"
         cursor.execute("""
-            SELECT p.id, p.name, p.barcode, p.price, p.cost_price, p.active, p.created_at,
-                   s.quantity, s.min_quantity
-            FROM products p
-            LEFT JOIN stock s ON p.id = s.product_id
-            WHERE p.active = 1 AND (p.name LIKE %s OR p.barcode LIKE %s)
-            ORDER BY p.name
-        """, (search_pattern, search_pattern))
+    SELECT 
+        p.id, 
+        p.name, 
+        p.barcode, 
+        p.price, 
+        p.cost_price, 
+        p.active, 
+        p.created_at,
+        p.category_id,
+        c.categoria AS category,
+        s.quantity, 
+        s.min_quantity
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN stock s ON p.id = s.product_id
+    WHERE p.active = 1 
+    AND (p.name LIKE %s OR p.barcode LIKE %s)
+    ORDER BY p.name
+""", (search_pattern, search_pattern))
         
         products = cursor.fetchall()
         return {"success": True, "data": products}

@@ -11,7 +11,10 @@ import { apiClient } from '../services/api';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<View>('dashboard');
+  const [view, setView] = useState<View>(() => {
+    const saved = localStorage.getItem('app_view');
+    return saved as View || 'dashboard';
+  });
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,18 +25,9 @@ const App: React.FC = () => {
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
-      // Vendedores começam direto no POS
-      if (parsedUser.role === 'SALES') setView('pos');
-      
-      // Buscar produtos do backend
+      if (parsedUser.role === 'SALES' && view === 'dashboard') setView('pos');
       loadProducts();
     }
-
-    const savedSales = localStorage.getItem('sales');
-    if (savedSales) {
-      setSales(JSON.parse(savedSales));
-    }
-    
     setIsLoading(false);
   }, []);
 
@@ -45,7 +39,7 @@ const App: React.FC = () => {
         const formattedProducts: Product[] = response.data.map((p: any) => ({
           id: p.id.toString(),
           name: p.name,
-          category: 'Geral',
+          category: p.category || 'Sem Categoria',
           price: parseFloat(p.price),
           stock: p.quantity || 0,
           minStock: p.min_quantity || 0,
@@ -63,67 +57,92 @@ const App: React.FC = () => {
     if (products.length > 0) localStorage.setItem('products', JSON.stringify(products));
   }, [products]);
 
+  // quando o usuário mudar, recarrega histórico do servidor
   useEffect(() => {
-    if (sales.length > 0) localStorage.setItem('sales', JSON.stringify(sales));
-  }, [sales]);
+    if (!user) return;
+    apiClient.getSales(user.token)
+      .then(res => {
+        if (res.success && res.data) {
+          setSales(res.data);
+        }
+      })
+      .catch(err => console.error('Erro carregando vendas:', err));
+  }, [user]);
 
   const handleLogin = (loggedUser: User) => {
     setUser(loggedUser);
     localStorage.setItem('user_session', JSON.stringify(loggedUser));
-    setView(loggedUser.role === 'ADMIN' || 'GERENTE' ? 'dashboard' : 'pos');
-    
+    const initialView = loggedUser.role === 'ADMIN' ? 'dashboard' : 'pos';
+    setView(initialView);
+    localStorage.setItem('app_view', initialView);
+
     // Buscar produtos do backend após login
     loadProducts();
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('app_view');
     localStorage.removeItem('user_session');
   };
 
   const handleUpdateProduct = async (updated: Product) => {
     if (!user) return;
-    
     try {
       console.log('Atualizando produto:', updated.id, updated);
-      
+
       // Atualizar produto no backend
-      await apiClient.updateProduct(
-        parseInt(updated.id),
-        {
-          name: updated.name,
-          barcode: updated.barcode,
-          price: updated.price
-        },
-        user.token
-      );
+      const prodRes = await apiClient.updateProduct(parseInt(updated.id), {
+        name: updated.name,
+        barcode: updated.barcode,
+        price: updated.price,
+        category: updated.category
+      }, user.token);
 
-      // Atualizar estoque no backend
-      await apiClient.updateStock(
-        parseInt(updated.id),
-        updated.stock,
-        user.token
-      );
 
-      // Atualizar quantidade mínima no backend
-      await apiClient.setMinQuantity(
-        parseInt(updated.id),
-        updated.minStock,
-        user.token
-      );
+      // atualizar estoque (tratando falhas separadamente)
+      let stockRes: any = { success: true };
+      try {
+        stockRes = await apiClient.updateStock(parseInt(updated.id), updated.stock, user.token);
+      } catch (e) {
+        console.warn('updateStock falhou:', e);
+        // tentar carregar a resposta do servidor se existir
+        stockRes = (e as any)?.message ? { success: false, message: (e as any).message } : { success: false, message: 'Erro ao atualizar estoque' };
+      }
 
-      // Atualizar estado local
+      let minRes: any = { success: true };
+      try {
+        minRes = await apiClient.setMinQuantity(parseInt(updated.id), updated.minStock, user.token);
+      } catch (e) {
+        console.warn('setMinQuantity falhou:', e);
+        minRes = (e as any)?.message ? { success: false, message: (e as any).message } : { success: false, message: 'Erro ao atualizar quantidade mínima' };
+      }
+
+      // Sincronizar estado local com backend (se alguma operação parcial falhar, recarregamos)
+      if (!stockRes.success || !minRes.success) {
+        await loadProducts();
+        const messages = [] as string[];
+        if (!stockRes.success) messages.push(`Estoque: ${stockRes.message || 'falha'}`);
+        if (!minRes.success) messages.push(`Mínimo: ${minRes.message || 'falha'}`);
+        alert(`Atualizado parcialmente. ${messages.join(' | ')}`);
+        return;
+      }
+
+      // atualizar estado local
       setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
       alert('Produto atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar produto:', error);
-      alert('Erro ao salvar produto. Tente novamente.');
+      // garantir sincronização da UI com o backend
+      try { await loadProducts(); } catch { }
+      const message = (error as any)?.message || 'Erro ao salvar produto. Tente novamente.';
+      alert(message);
     }
   };
 
   const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
     if (!user) return;
-    
+
     try {
       // Criar produto no backend
       const result = await apiClient.createProduct(
@@ -131,6 +150,8 @@ const App: React.FC = () => {
           name: newProduct.name,
           barcode: newProduct.barcode,
           price: newProduct.price
+          , stock: newProduct.stock,
+          min_stock: newProduct.minStock
         },
         user.token
       );
@@ -147,7 +168,7 @@ const App: React.FC = () => {
 
   const handleDeleteProduct = async (id: string) => {
     if (!user) return;
-    
+
     if (window.confirm("Deseja excluir este produto?")) {
       try {
         await apiClient.deleteProduct(parseInt(id), user.token);
@@ -159,18 +180,38 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCompleteSale = (saleData: Omit<Sale, 'userId'>) => {
+  const handleCompleteSale = async (saleData: Omit<Sale, 'userId'>) => {
     if (!user) return;
     const sale: Sale = { ...saleData, userId: user.id };
-    setSales(prev => [...prev, sale]);
-    
-    setProducts(prev => prev.map(product => {
-      const soldItem = sale.items.find(item => item.productId === product.id);
-      if (soldItem) {
-        return { ...product, stock: Math.max(0, product.stock - soldItem.quantity) };
+
+    try {
+      const result = await apiClient.createSale(sale, user.token);
+      if (!result.success) {
+        // mostre a mensagem do servidor se houver
+        const msg = result.message || 'Erro desconhecido';
+        throw new Error(msg);
       }
-      return product;
-    }));
+
+      // atualizar id gerado pelo servidor, se houver
+      if (result.sale_id) {
+        sale.id = result.sale_id.toString();
+      }
+
+      // adicionar à lista local
+      setSales(prev => [...prev, sale]);
+
+      // ajustar estoque localmente
+      setProducts(prev => prev.map(product => {
+        const soldItem = sale.items.find(item => item.productId === product.id);
+        if (soldItem) {
+          return { ...product, stock: Math.max(0, product.stock - soldItem.quantity) };
+        }
+        return product;
+      }));
+    } catch (error) {
+      console.error('Erro ao registrar venda:', error);
+      alert(`Erro ao registrar venda: ${error instanceof Error ? error.message : error}`);
+    }
   };
 
   if (!user) {
@@ -197,8 +238,10 @@ const App: React.FC = () => {
     switch (view) {
       case 'dashboard': return isAdmin || isGerente ? <Dashboard products={products} sales={sales} /> : <POS products={products} onCompleteSale={handleCompleteSale} />;
       case 'pos': return <POS products={products} onCompleteSale={handleCompleteSale} />;
-      case 'inventory': return isAdmin || isGerente ? <Inventory products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct} /> : null;
-      case 'history': return <History sales={user.role === 'ADMIN' || user.role === 'CAIXA' ? sales : sales.filter(s => s.userId === user.id)} />;
+      case 'inventory': return isAdmin || isGerente ? <Inventory products={products} onUpdate={handleUpdateProduct} onAdd={handleAddProduct} onDelete={handleDeleteProduct} /> : null;
+      case 'history':
+        // apenas ADMIN vê tudo; vendedores veem só suas vendas
+        return <History sales={isAdmin || isGerente ? sales : sales.filter(s => s.userId === user.id)} />;
       default: return <POS products={products} onCompleteSale={handleCompleteSale} />;
     }
   };

@@ -8,8 +8,6 @@ interface ApiResponse<T> {
 }
 
 export const apiClient = {
-  // ========== AUTH ==========
-
   async login(username: string, password: string) {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -20,7 +18,7 @@ export const apiClient = {
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao fazer login');
     }
@@ -32,12 +30,12 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/auth/verify`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Token inválido');
     }
@@ -45,12 +43,13 @@ export const apiClient = {
     return data;
   },
 
-  // ========== PRODUCTS ==========
-
   async getProducts() {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar produtos');
     }
@@ -59,11 +58,12 @@ export const apiClient = {
   },
 
   async searchProducts(search: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/products?search=${encodeURIComponent(search)}`
-    );
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/products?search=${encodeURIComponent(search)}`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar produtos');
     }
@@ -72,9 +72,12 @@ export const apiClient = {
   },
 
   async getProductById(productId: number) {
-    const response = await fetch(`${API_BASE_URL}/products/${productId}`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar produto');
     }
@@ -87,13 +90,13 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(product),
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao criar produto');
     }
@@ -106,13 +109,13 @@ export const apiClient = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(product),
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao atualizar produto');
     }
@@ -124,12 +127,12 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao deletar produto');
     }
@@ -140,9 +143,12 @@ export const apiClient = {
   // ========== STOCK ==========
 
   async getStock() {
-    const response = await fetch(`${API_BASE_URL}/stock`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/stock`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar estoque');
     }
@@ -151,9 +157,12 @@ export const apiClient = {
   },
 
   async getProductStock(productId: number) {
-    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar estoque do produto');
     }
@@ -162,9 +171,12 @@ export const apiClient = {
   },
 
   async getLowStockProducts() {
-    const response = await fetch(`${API_BASE_URL}/stock/low`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/stock/low`, {
+      method: 'GET',
+    });
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao buscar produtos com estoque baixo');
     }
@@ -173,20 +185,17 @@ export const apiClient = {
   },
 
   async updateStock(productId: number, quantity: number, token: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/stock/product/${productId}/update`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}/update`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity }),
+    });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao atualizar estoque');
     }
@@ -195,20 +204,17 @@ export const apiClient = {
   },
 
   async addStock(productId: number, quantity: number, token: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/stock/product/${productId}/add`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}/add`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity }),
+    });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao adicionar ao estoque');
     }
@@ -217,20 +223,17 @@ export const apiClient = {
   },
 
   async removeStock(productId: number, quantity: number, token: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/stock/product/${productId}/remove`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}/remove`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity }),
+    });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao remover do estoque');
     }
@@ -239,20 +242,17 @@ export const apiClient = {
   },
 
   async setMinQuantity(productId: number, minQuantity: number, token: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/stock/product/${productId}/min`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ min_quantity: minQuantity }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/stock/product/${productId}/min`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ min_quantity: minQuantity }),
+    });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao atualizar quantidade mínima');
     }
@@ -260,20 +260,18 @@ export const apiClient = {
     return data;
   },
 
-  // ========== SALES ==========
-
   async createSale(sale: any, token: string) {
     const response = await fetch(`${API_BASE_URL}/sales`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(sale),
     });
 
     const data = await response.json();
-
+    
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao criar venda');
     }
@@ -281,23 +279,28 @@ export const apiClient = {
     return data;
   },
 
-  async getSalesReport(startDate: string, endDate: string, token: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/reports/sales?start_date=${startDate}&end_date=${endDate}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+  async getSales(token: string) {
+    const response = await fetch(`${API_BASE_URL}/sales`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    );
-
+    });
     const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.message || 'Erro ao buscar relatório de vendas');
+      throw new Error(data.message || 'Erro ao buscar vendas');
     }
+    return data;
+  },
 
+  async getSalesReport(startDate: string, endDate: string, token: string) {
+    const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+    const response = await fetch(`${API_BASE_URL}/reports/sales?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao gerar relatório');
+    }
     return data;
   },
 };

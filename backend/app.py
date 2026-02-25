@@ -5,14 +5,12 @@ from auth import authenticate_user, create_user, get_user_by_token
 from products import get_all_products, get_product_by_id, create_product, update_product, delete_product, search_products
 from report import generate_sales_report
 from stock import get_stock_by_product, get_all_stock, update_stock, add_stock, remove_stock, set_min_quantity, get_low_stock_products
+from sales import get_all_sales, get_sales_by_user, create_sale
 from init_db import init_database
 from functools import wraps
 
 app = Flask(__name__)
-CORS(app,
-    resources={r"/api/*": {"origins": "http://localhost:3000"}},
-    supports_credentials=True
-     )
+CORS(app)
 
 # Inicializar banco de dados na primeira execução
 init_database()
@@ -22,7 +20,6 @@ def require_token(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         token = request.headers.get('Authorization')
-        print("AUTH HEADER:", token)  # 👈 DEBUG
         if not token:
             return jsonify({"success": False, "message": "Token não fornecido"}), 401
         
@@ -127,13 +124,18 @@ def create_new_product():
     
     if not data or not data.get('name') or data.get('price') is None:
         return jsonify({"success": False, "message": "Nome e preço são obrigatórios"}), 400
-    
+    # aceitar estoque inicial e quantidade mínima se fornecidos
+    stock_qty = data.get('stock')
+    min_qty = data.get('min_stock')
+
     result = create_product(
         name=data['name'],
         barcode=data.get('barcode'),
         price=data['price'],
         cost_price=data.get('cost_price'),
-        active=data.get('active', 1)
+        active=data.get('active', 1),
+        stock=stock_qty,
+        min_quantity=min_qty
     )
     
     return jsonify(result), (201 if result['success'] else 400)
@@ -141,19 +143,35 @@ def create_new_product():
 @app.route("/api/products/<int:product_id>", methods=["PUT"])
 @require_token
 def update_existing_product(product_id):
-    """Atualiza um produto existente"""
     data = request.get_json()
-    
+
+    category_id = data.get('category_id')
+    category_name = data.get('category')
+
+    if category_id is not None:
+        category_id = int(category_id)
+
     result = update_product(
         product_id=product_id,
         name=data.get('name'),
         barcode=data.get('barcode'),
         price=data.get('price'),
         cost_price=data.get('cost_price'),
-        active=data.get('active')
+        active=data.get('active'),
+        category_id=category_id,
+        category=category_name
     )
-    
+    return jsonify(result)
+
+    # 🔥 Atualizar estoque se vier no payload
+    if data.get('stock') is not None:
+        update_stock(product_id, data.get('stock'))
+
+    if data.get('min_stock') is not None:
+        set_min_quantity(product_id, data.get('min_stock'))
+
     return jsonify(result), (200 if result['success'] else 404)
+
 
 @app.route("/api/products/<int:product_id>", methods=["DELETE"])
 @require_token
@@ -248,6 +266,67 @@ def set_product_min_quantity(product_id):
     return jsonify(result), (200 if result['success'] else 404)
 
 
+# ============ VENDAS ============
+
+@app.route("/api/sales", methods=["GET"])
+@require_token
+def list_sales():
+    """Retorna vendas. ADMIN/GERENTE veem todas, CASAS só suas"""
+    user = request.user
+    if user['role'] in ('ADMIN', 'GERENTE'):
+        result = get_all_sales()
+    else:
+        result = get_sales_by_user(user['id'])
+
+    # debug output
+    if result.get('success') and isinstance(result.get('data'), list):
+        print(f"[DEBUG] list_sales returned {len(result['data'])} records for user {user['id']}")
+    else:
+        print(f"[DEBUG] list_sales error: {result}")
+
+    status = 200 if result.get('success') else 500
+    return jsonify(result), status
+
+@app.route("/api/sales", methods=["POST"])
+@require_token
+def create_sale_route():
+    """Cadastra uma venda"""
+    data = request.get_json() or {}
+    required = ['timestamp', 'total', 'paymentMethod', 'items']
+    for field in required:
+        if field not in data:
+            return jsonify({"success": False, "message": f"Campo {field} é obrigatório"}), 400
+    user = request.user
+    ts = data['timestamp']
+    # MySQL expects a datetime object; frontend sends millis since epoch
+    try:
+        from datetime import datetime
+        if isinstance(ts, (int, float)):
+            ts = datetime.fromtimestamp(ts / 1000.0)
+    except Exception:
+        pass
+
+    try:
+        result = create_sale(
+            user_id=user['id'],
+            timestamp=ts,
+            total=data['total'],
+            payment_method=data['paymentMethod'],
+            items=data['items']
+        )
+    except Exception as e:
+        # log unexpected exception
+        print(f"Erro interno ao criar venda: {e}")
+        result = {"success": False, "message": str(e)}
+
+    status = 200 if result.get('success') else 500
+    if not result.get('success'):
+        # print detailed result so developer can inspect
+        print("create_sale result:", result)
+    return jsonify(result), status
+
+
+
 # ============ RELATÓRIOS ============
 
 @app.route("/api/reports/sales", methods=["GET"])
@@ -267,23 +346,24 @@ def get_sales_report():
     else:
         return jsonify(result), 500
 
+# ============ CATEGORIAS ============
+
+@app.route("/categories", methods=["GET"])
+def get_categories():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT id, categoria FROM categories WHERE active = 1")
+        categories = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(categories), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
 
-@app.route("/api/sales/report", methods=["GET", "OPTIONS"])
-@require_token
-def sales_report_front():
-    if request.method == "OPTIONS":
-        return "", 200
-
-    start = request.args.get("start")
-    end = request.args.get("end")
-
-    if not start or not end:
-        return jsonify({
-            "success": False,
-            "message": "Parâmetros start e end são obrigatórios"
-        }), 400
-
-    result = generate_sales_report(start, end)
-    return jsonify(result), (200 if result["success"] else 500)

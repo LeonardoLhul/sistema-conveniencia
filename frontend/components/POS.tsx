@@ -11,7 +11,7 @@ interface POSProps {
 const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<SaleItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'DINHEIRO' | 'CRÉDITO' | 'PIX' | 'DÉBITO'> ('credit');
+  const [paymentMethod, setPaymentMethod] = useState <'DINHEIRO' | 'CREDITO' | 'PIX' | 'DEBITO'> ('PIX');
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return [];
@@ -162,17 +162,17 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             <p className="text-sm font-medium text-slate-500">Forma de Pagamento</p>
             <div className="grid grid-cols-5 gap-2">
               <button
-                onClick={() => setPaymentMethod('DÉBITO')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'DÉBITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
-                style={paymentMethod === 'DÉBITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+                onClick={() => setPaymentMethod('DEBITO')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'DEBITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'DEBITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <CreditCard size={18} />
                 <span className="text-[10px] font-bold uppercase">Débito</span>
               </button>
                <button
-                onClick={() => setPaymentMethod('CRÉDITO')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'CRÉDITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
-                style={paymentMethod === 'CRÉDITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
+                onClick={() => setPaymentMethod('CREDITO')}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'CREDITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={paymentMethod === 'CREDITO' ? { backgroundColor: '#d9a441', borderColor: '#d9a441', color: '#48733e' } : {}}
               >
                 <CreditCard size={18} />
                 <span className="text-[10px] font-bold uppercase">Crédito</span>
