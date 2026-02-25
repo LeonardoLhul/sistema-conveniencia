@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 import { TrendingUp, Package, AlertCircle, DollarSign, Clock } from 'lucide-react';
 import { Product, Sale } from '../types';
@@ -10,28 +10,74 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+
+  // Business day helper: store's business day starts at 03:00
+  const BUSINESS_DAY_START_HOUR = 3;
+
+  const getBusinessDate = (dt: Date) => {
+    const shifted = new Date(dt.getTime() - BUSINESS_DAY_START_HOUR * 60 * 60 * 1000);
+    return new Date(shifted.getFullYear(), shifted.getMonth(), shifted.getDate());
+  };
+
+  const isSameBusinessDay = (a: Date, b: Date) => {
+    const da = getBusinessDate(a);
+    const db = getBusinessDate(b);
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+  };
+
+  const formatDateInput = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const selectedSales = useMemo(() => sales.filter(s => isSameBusinessDay(new Date(s.timestamp), selectedDate)), [sales, selectedDate]);
+  const selectedTotal = useMemo(() => selectedSales.reduce((sum, s) => sum + s.total, 0), [selectedSales]);
+  const selectedAvgTicket = selectedSales.length > 0 ? selectedTotal / selectedSales.length : 0;
+
+  const prevDate = useMemo(() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); return d; }, [selectedDate]);
+  const prevSales = useMemo(() => sales.filter(s => isSameBusinessDay(new Date(s.timestamp), prevDate)), [sales, prevDate]);
+  const prevTotal = useMemo(() => prevSales.reduce((sum, s) => sum + s.total, 0), [prevSales]);
+  const percentChange = prevTotal > 0 ? ((selectedTotal - prevTotal) / prevTotal) * 100 : 0;
+
   const lowStockItems = products.filter(p => p.stock <= p.minStock);
   const totalSalesValue = sales.reduce((sum, s) => sum + s.total, 0);
   const avgTicket = sales.length > 0 ? totalSalesValue / sales.length : 0;
 
   // Process data for charts
-  const salesByDay = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    const dayStr = d.toLocaleDateString('pt-BR', { weekday: 'short' });
-    const total = sales
-      .filter(s => new Date(s.timestamp).toDateString() === d.toDateString())
-      .reduce((sum, s) => sum + s.total, 0);
-    return { name: dayStr, value: total };
-  });
+  const salesByDay = (() => {
+    const base = getBusinessDate(new Date());
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(base);
+      day.setDate(base.getDate() - (6 - i));
+      const dayStr = day.toLocaleDateString('pt-BR', { weekday: 'short' });
+      const total = sales
+        .filter(s => isSameBusinessDay(new Date(s.timestamp), day))
+        .reduce((sum, s) => sum + s.total, 0);
+      return { name: dayStr, value: total };
+    });
+  })();
 
   const inventoryValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
 
   return (
     <div className="space-y-6">
-      <header className="mb-8">
-        <h2 className="text-3xl font-bold text-slate-900">Visão Geral</h2>
-        <p className="text-slate-500">Acompanhe o desempenho da sua loja em tempo real.</p>
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900">Visão Geral</h2>
+          <p className="text-slate-500">Acompanhe o desempenho da sua loja em tempo real.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-slate-500">Data:</label>
+          <input
+            type="date"
+            className="px-3 py-2 rounded-lg border border-slate-200"
+            value={formatDateInput(selectedDate)}
+            onChange={(e) => setSelectedDate(new Date(`${e.target.value}T00:00`))}
+          />
+        </div>
       </header>
 
       {/* Metrics Grid */}
@@ -41,10 +87,17 @@ const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
               <DollarSign size={20} />
             </div>
-            <span className="text-xs font-medium text-emerald-600">+12.5%</span>
+            {(() => {
+              const positive = percentChange >= 0;
+              return (
+                <span className={`text-xs font-medium ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {positive ? '+' : ''}{percentChange.toFixed(1)}%
+                </span>
+              );
+            })()}
           </div>
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Vendas Totais</p>
-          <h3 className="text-2xl font-bold text-slate-900">R$ {totalSalesValue.toFixed(2)}</h3>
+          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Vendas em {selectedDate.toLocaleDateString()}</p>
+          <h3 className="text-2xl font-bold text-slate-900">R$ {selectedTotal.toFixed(2)}</h3>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -52,10 +105,10 @@ const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <TrendingUp size={20} />
             </div>
-            <span className="text-xs font-medium text-blue-600">85 hoje</span>
+            <span className="text-xs font-medium text-blue-600">{selectedSales.length} hoje</span>
           </div>
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Ticket Médio</p>
-          <h3 className="text-2xl font-bold text-slate-900">R$ {avgTicket.toFixed(2)}</h3>
+          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Ticket Médio ({selectedDate.toLocaleDateString()})</p>
+          <h3 className="text-2xl font-bold text-slate-900">R$ {selectedAvgTicket.toFixed(2)}</h3>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
