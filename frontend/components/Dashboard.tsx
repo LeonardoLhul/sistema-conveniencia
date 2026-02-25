@@ -175,7 +175,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <h4 className="font-semibold text-slate-800">Alertas de Reposição</h4>
-            <button className="text-sm font-medium hover:underline" style={{ color: '#d9a441' }}>Ver tudo</button>
+            {/* <button className="text-sm font-medium hover:underline" style={{ color: '#d9a441' }}>Ver tudo</button> */}
           </div>
           <div className="space-y-4">
             {lowStockItems.length > 0 ? lowStockItems.slice(0, 5).map(item => (
