@@ -98,7 +98,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
           <table className="w-full text-left">
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map(product => {
@@ -166,14 +166,26 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Nome do Produto</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">
+                  Nome do Produto
+                </label>
                 <input
                   required
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
-                  onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
-                  onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow =
+                      "0 0 0 2px rgba(217, 164, 65, 0.5)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      name: e.target.value.toUpperCase(),
+                    })
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
