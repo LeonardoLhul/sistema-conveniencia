@@ -73,13 +73,20 @@ def get_product_by_id(product_id):
         cursor.close()
         conn.close()
 
-def create_product(name, barcode, price, cost_price=None, active=1, category_id=None, stock=None, min_quantity=None):
+def create_product(name, barcode, price, cost_price=None, active=1, category_id=None, category=None, stock=None, min_quantity=None):
 
     """Cria um novo produto e opcionalmente inicializa o estoque"""
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
+        # Se receber categoria como string (nome), resolver para category_id
+        if category is not None and category_id is None:
+            cursor.execute("SELECT id FROM categories WHERE categoria = %s", (category,))
+            cat_row = cursor.fetchone()
+            if cat_row:
+                category_id = cat_row[0]
+        
         cursor.execute("""
     INSERT INTO products (name, barcode, price, cost_price, active, category_id) 
     VALUES (%s, %s, %s, %s, %s, %s)

@@ -30,6 +30,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
     name: '',
     category: '',
     price: 0,
+    costPrice: 0,
     stock: 0,
     minStock: 5,
     barcode: ''
@@ -52,7 +53,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
   };
 
   const resetForm = () => {
-    setFormData({ name: '', category: '', price: 0, stock: 0, minStock: 5, barcode: '' });
+    setFormData({ name: '', category: '', price: 0, costPrice: 0, stock: 0, minStock: 5, barcode: '' });
     setEditingId(null);
   };
 
@@ -190,6 +191,20 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Preço de Custo (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none"
+                    onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217, 164, 65, 0.5)'; }}
+                    onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                    value={formData.costPrice}
+                    onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Estoque Inicial</label>
                   <input
                     type="number"
@@ -199,6 +214,15 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdate, onAdd, onDele
                     onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Margem de Lucro</label>
+                  <input
+                    type="text"
+                    disabled
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed"
+                    value={formData.costPrice > 0 ? `${(((formData.price - formData.costPrice) / formData.costPrice) * 100).toFixed(1)}%` : '-'}
                   />
                 </div>
               </div>

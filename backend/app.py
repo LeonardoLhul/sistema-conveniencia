@@ -127,6 +127,10 @@ def create_new_product():
     # aceitar estoque inicial e quantidade mínima se fornecidos
     stock_qty = data.get('stock')
     min_qty = data.get('min_stock')
+    
+    # aceitar categoria como string ou ID
+    category_id = data.get('category_id')
+    category_name = data.get('category')
 
     result = create_product(
         name=data['name'],
@@ -134,6 +138,8 @@ def create_new_product():
         price=data['price'],
         cost_price=data.get('cost_price'),
         active=data.get('active', 1),
+        category_id=category_id,
+        category=category_name,
         stock=stock_qty,
         min_quantity=min_qty
     )

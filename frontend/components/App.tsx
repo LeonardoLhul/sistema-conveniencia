@@ -41,6 +41,7 @@ const App: React.FC = () => {
           name: p.name,
           category: p.category || 'Sem Categoria',
           price: parseFloat(p.price),
+          costPrice: parseFloat(p.cost_price) || 0,
           stock: p.quantity || 0,
           minStock: p.min_quantity || 0,
           barcode: p.barcode || ''
@@ -96,6 +97,7 @@ const App: React.FC = () => {
         name: updated.name,
         barcode: updated.barcode,
         price: updated.price,
+        cost_price: updated.costPrice || 0,
         category: updated.category
       }, user.token);
 
@@ -149,8 +151,10 @@ const App: React.FC = () => {
         {
           name: newProduct.name,
           barcode: newProduct.barcode,
-          price: newProduct.price
-          , stock: newProduct.stock,
+          price: newProduct.price,
+          cost_price: newProduct.costPrice || 0,
+          category: newProduct.category || 'Sem Categoria',
+          stock: newProduct.stock,
           min_stock: newProduct.minStock
         },
         user.token
