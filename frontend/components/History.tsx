@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Download, Calendar, ArrowRight } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, X } from 'lucide-react';
 import { Sale } from '../types';
 
 interface HistoryProps {
@@ -12,6 +12,7 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
     d.setHours(3, 0, 0, 0);
     return d;
   });
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   // Business day helper: store's business day starts at 03:00
   const BUSINESS_DAY_START_HOUR = 3;
@@ -57,6 +58,7 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
   };
 
   return (
+    <>
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex justify-between items-center">
@@ -149,6 +151,7 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
                 <th className="px-6 py-4 font-semibold text-center">Itens</th>
                 <th className="px-6 py-4 font-semibold text-center">Pagamento</th>
                 <th className="px-6 py-4 font-semibold text-center">Total</th>
+                <th className="px-6 py-4 font-semibold text-center">Ações</th>
               </tr>
             </thead>
 
@@ -203,6 +206,15 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
                         />
                       </div>
                     </td>
+
+                    <td className="px-6 py-2 text-center">
+                      <button
+                        onClick={() => setSelectedSale(sale)}
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                      >
+                        Ver detalhes
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -219,6 +231,77 @@ const History: React.FC<HistoryProps> = ({ sales }) => {
         </div>
       </div>
     </div>
+    {selectedSale && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4"
+        onClick={() => setSelectedSale(null)}
+      >
+        <div
+          className="w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Detalhes da venda</p>
+              <h3 className="text-2xl font-bold text-slate-900">Transação {selectedSale.id}</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {new Date(selectedSale.timestamp).toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <button
+              onClick={() => setSelectedSale(null)}
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(85vh-96px)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pagamento</p>
+                <p className="mt-2 text-lg font-bold text-slate-900 uppercase">
+                  {getPaymentIcon(selectedSale.paymentMethod)} {selectedSale.paymentMethod}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Itens</p>
+                <p className="mt-2 text-lg font-bold text-slate-900">
+                  {selectedSale.items.reduce((sum, item) => sum + item.quantity, 0)} unidade(s)
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
+                <p className="mt-2 text-lg font-bold" style={{ color: '#d9a441' }}>
+                  R$ {selectedSale.total.toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-4 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                <span>Produto</span>
+                <span>Qtd.</span>
+                <span>Total</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {selectedSale.items.map((item) => (
+                  <div key={`${selectedSale.id}-${item.productId}`} className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-4 items-center">
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.name}</p>
+                      <p className="text-sm text-slate-500">R$ {item.price.toFixed(2)} por unidade</p>
+                    </div>
+                    <span className="font-bold text-slate-700 text-center">{item.quantity}</span>
+                    <span className="font-bold text-slate-900">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

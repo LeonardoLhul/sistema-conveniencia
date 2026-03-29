@@ -1,38 +1,69 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Plus, Minus, Trash2, CreditCard, Banknote, QrCode, ShoppingCart } from 'lucide-react';
 import { Product, SaleItem, Sale } from '../types';
 
 interface POSProps {
   products: Product[];
   // Fix: changed onCompleteSale to accept a Sale without userId as it is added in the parent App component
-  onCompleteSale: (sale: Omit<Sale, 'userId'>) => void;
+  onCompleteSale: (sale: Omit<Sale, 'userId'>) => Promise<void>;
+  onInternalConsumption: (items: SaleItem[]) => Promise<void>;
 }
 
-const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
+const POS: React.FC<POSProps> = ({ products, onCompleteSale, onInternalConsumption }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<SaleItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState <'DINHEIRO' | 'CREDITO' | 'PIX' | 'DEBITO'> ('PIX');
+  const [operationType, setOperationType] = useState<'SALE' | 'INTERNAL'>('SALE');
+  const [paymentMethod, setPaymentMethod] = useState<'DINHEIRO' | 'CREDITO' | 'PIX' | 'DEBITO' | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const parseSearchInput = (value: string) => {
+    const trimmedValue = value.trim();
+    const quantityMatch = trimmedValue.match(/^(\d+)\*(.*)$/);
+
+    if (!quantityMatch) {
+      return { quantity: 1, term: trimmedValue };
+    }
+
+    return {
+      quantity: Math.max(1, Number(quantityMatch[1])),
+      term: quantityMatch[2].trim(),
+    };
+  };
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return [];
-    const term = searchTerm.toLowerCase();
+    const { term } = parseSearchInput(searchTerm);
+    if (!term) return [];
+    const normalizedTerm = term.toLowerCase();
     return products.filter(p => 
-      p.name.toLowerCase().includes(term) || 
+      p.name.toLowerCase().includes(normalizedTerm) || 
       p.barcode.includes(term)
     );
   }, [searchTerm, products]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity = 1) => {
     if (product.stock <= 0) {
+      setSearchTerm('');
       alert("Produto sem estoque!");
       return;
     }
+
+    if (quantity > product.stock) {
+      setSearchTerm('');
+      alert(`Estoque insuficiente para adicionar ${quantity} unidade(s) de ${product.name}.`);
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.productId === product.id);
       if (existing) {
+        if (existing.quantity + quantity > product.stock) {
+          setSearchTerm('');
+          alert(`Estoque insuficiente para adicionar ${quantity} unidade(s) de ${product.name}.`);
+          return prev;
+        }
+
         return prev.map(item => 
           item.productId === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
@@ -40,10 +71,39 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
         productId: product.id,
         name: product.name,
         price: product.price,
-        quantity: 1
+        quantity
       }];
     });
     setSearchTerm('');
+  };
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!searchTerm) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchTerm]);
+
+  const handleSearchSubmit = () => {
+    const { quantity, term } = parseSearchInput(searchTerm);
+    if (!term) return;
+
+    const normalizedTerm = term.toLowerCase();
+    const exactMatch = products.find(product =>
+      product.barcode === term || product.name.toLowerCase() === normalizedTerm
+    );
+
+    if (exactMatch) {
+      addToCart(exactMatch, quantity);
+      return;
+    }
+
+    if (filteredProducts.length === 1) {
+      addToCart(filteredProducts[0], quantity);
+    }
   };
 
   const updateQuantity = (productId: string, delta: number) => {
@@ -57,11 +117,22 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const requiresPayment = operationType === 'SALE';
+  const canCheckout = cart.length > 0 && (!requiresPayment || paymentMethod !== null);
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
-    
-    // Fix: Updated type to Omit<Sale, 'userId'> to match the actual object structure at this stage
+  const handleCheckout = async () => {
+    if (!canCheckout) return;
+
+    if (operationType === 'INTERNAL') {
+      await onInternalConsumption([...cart]);
+      setCart([]);
+      setPaymentMethod(null);
+      alert("Consumo interno registrado com sucesso!");
+      return;
+    }
+
+    if (!paymentMethod) return;
+
     const newSale: Omit<Sale, 'userId'> = {
       id: Math.random().toString(36).substr(2, 9),
       timestamp: Date.now(),
@@ -70,18 +141,20 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
       paymentMethod
     };
 
-    onCompleteSale(newSale);
+    await onCompleteSale(newSale);
     setCart([]);
+    setPaymentMethod(null);
     alert("Venda realizada com sucesso!");
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-6">
+    <div className="h-full min-h-0 flex flex-col md:flex-row gap-6">
       {/* Product Selection */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 min-h-0 space-y-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Pesquisar produto ou bipar código..."
             className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-200 shadow-sm focus:outline-none text-lg"
@@ -89,6 +162,12 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSearchSubmit();
+              }
+            }}
           />
         </div>
 
@@ -97,12 +176,13 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             <button
               key={product.id}
               onClick={() => addToCart(product)}
-              className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-amber-400 hover:ring-1 transition-all text-left"
+              title={product.name}
+              className="bg-white p-5 min-h-[9.5rem] rounded-xl shadow-sm border border-slate-200 hover:border-amber-400 hover:ring-1 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.02] transition-all text-left"
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d9a441'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
             >
               <div className="text-xs font-semibold mb-1" style={{ color: '#48733e' }}>{product.category}</div>
-              <div className="font-bold text-slate-800 line-clamp-2 min-h-[3rem]">{product.name}</div>
+              <div className="font-bold text-slate-800 line-clamp-3 min-h-[4.5rem]">{product.name}</div>
               <div className="mt-2 flex justify-between items-center">
                 <span className="text-lg font-extrabold text-slate-900">R$ {product.price.toFixed(2)}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${product.stock > product.minStock ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
@@ -125,14 +205,14 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
       </div>
 
       {/* Cart / Summary */}
-      <div className="w-full md:w-96 flex flex-col bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-        <div className="p-6 text-white flex items-center gap-3" style={{ backgroundColor: '#48733e' }}>
+      <div className="w-full md:w-96 md:h-[calc(100vh-2rem)] min-h-0 flex flex-col bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+        <div className="shrink-0 p-6 text-white flex items-center gap-3" style={{ backgroundColor: '#48733e' }}>
           <ShoppingCart />
           <h3 className="text-xl font-bold">Carrinho</h3>
           <span className="ml-auto text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#d9a441', color: '#48733e' }}>{cart.length} itens</span>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 space-y-3 min-h-[300px]">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
           {cart.map(item => (
             <div key={item.productId} className="flex flex-col p-3 bg-slate-50 rounded-xl border border-slate-100">
               <div className="flex justify-between font-semibold text-slate-800 mb-2">
@@ -157,10 +237,33 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-100 space-y-6">
+        <div className="shrink-0 p-6 border-t border-slate-100 space-y-6">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-500">Tipo de Operação</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setOperationType('SALE')}
+                className={`p-3 rounded-xl border transition-all font-bold text-sm ${operationType === 'SALE' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={operationType === 'SALE' ? { backgroundColor: '#48733e', borderColor: '#48733e' } : {}}
+              >
+                Venda
+              </button>
+              <button
+                onClick={() => {
+                  setOperationType('INTERNAL');
+                  setPaymentMethod(null);
+                }}
+                className={`p-3 rounded-xl border transition-all font-bold text-sm ${operationType === 'INTERNAL' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
+                style={operationType === 'INTERNAL' ? { backgroundColor: '#475569', borderColor: '#475569' } : {}}
+              >
+                Consumo Interno
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-500">Forma de Pagamento</p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className={`grid grid-cols-5 gap-2 ${!requiresPayment ? 'opacity-50 pointer-events-none' : ''}`}>
               <button
                 onClick={() => setPaymentMethod('DEBITO')}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${paymentMethod === 'DEBITO' ? 'text-white border' : 'bg-white border-slate-200 text-slate-500'}`}
@@ -195,6 +298,9 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
                 <span className="text-[10px] font-bold uppercase">Pix</span>
               </button>
             </div>
+            {!requiresPayment && (
+              <p className="text-xs text-slate-400">Consumo interno não exige forma de pagamento.</p>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -208,13 +314,13 @@ const POS: React.FC<POSProps> = ({ products, onCompleteSale }) => {
             </div>
             <button
               onClick={handleCheckout}
-              disabled={cart.length === 0}
+              disabled={!canCheckout}
               className="w-full py-4 disabled:bg-slate-200 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2"
-              style={{ backgroundColor: '#d9a441' }}
-              onMouseEnter={(e) => { if (!cart.length) return; e.currentTarget.style.backgroundColor = '#c99338'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#d9a441'; }}
+              style={{ backgroundColor: canCheckout ? '#d9a441' : '#cbd5e1' }}
+              onMouseEnter={(e) => { if (!canCheckout) return; e.currentTarget.style.backgroundColor = '#c99338'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = canCheckout ? '#d9a441' : '#cbd5e1'; }}
             >
-              FINALIZAR VENDA
+              {operationType === 'INTERNAL' ? 'REGISTRAR CONSUMO' : 'FINALIZAR VENDA'}
             </button>
           </div>
         </div>

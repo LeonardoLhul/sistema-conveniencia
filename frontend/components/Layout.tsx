@@ -108,8 +108,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, user,
       )}
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 md:pt-0">
-        <div className="max-w-5xl mx-auto p-7 md:p-3">
+      <main className="flex-1 min-h-0 pt-16 md:pt-0">
+        <div className="max-w-5xl h-full min-h-0 mx-auto p-7 md:p-3">
           {children}
         </div>
       </main>

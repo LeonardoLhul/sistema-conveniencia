@@ -137,6 +137,51 @@ def remove_stock(product_id, quantity):
         cursor.close()
         conn.close()
 
+def consume_internal(items):
+    """Remove vários itens do estoque em uma única transação, sem registrar venda."""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        for item in items:
+            product_id = item.get('productId')
+            quantity = item.get('quantity')
+
+            if product_id is None or quantity is None:
+                raise ValueError("Cada item deve conter productId e quantity")
+
+            cursor.execute("""
+                SELECT s.quantity, p.name
+                FROM stock s
+                JOIN products p ON p.id = s.product_id
+                WHERE s.product_id = %s
+                FOR UPDATE
+            """, (product_id,))
+            stock_row = cursor.fetchone()
+
+            if not stock_row:
+                raise ValueError(f"Estoque não encontrado para o produto {product_id}")
+
+            if stock_row['quantity'] < quantity:
+                raise ValueError(f"Quantidade insuficiente para {stock_row['name']}. Disponível: {stock_row['quantity']}")
+
+        for item in items:
+            cursor.execute("""
+                UPDATE stock
+                SET quantity = quantity - %s
+                WHERE product_id = %s
+            """, (item['quantity'], item['productId']))
+
+        conn.commit()
+        return {"success": True, "message": "Consumo interno registrado com sucesso"}
+
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "message": str(e)}
+    finally:
+        cursor.close()
+        conn.close()
+
 def set_min_quantity(product_id, min_quantity):
     conn = get_connection()
     cursor = conn.cursor()

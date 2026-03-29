@@ -64,7 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, sales }) => {
     });
   })();
 
-  const inventoryValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
+  const inventoryValue = products.reduce((sum, p) => sum + ((p.costPrice || 0) * p.stock), 0);
 
   return (
     <div className="space-y-6">

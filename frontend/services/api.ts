@@ -7,7 +7,29 @@ interface ApiResponse<T> {
   [key: string]: any;
 }
 
-export const apiClient = {
+interface ApiClient {
+  login(username: string, password: string): Promise<any>;
+  verifyToken(token: string): Promise<any>;
+  getProducts(): Promise<any>;
+  searchProducts(search: string): Promise<any>;
+  getProductById(productId: number): Promise<any>;
+  createProduct(product: any, token: string): Promise<any>;
+  updateProduct(productId: number, product: any, token: string): Promise<any>;
+  deleteProduct(productId: number, token: string): Promise<any>;
+  getStock(): Promise<any>;
+  getProductStock(productId: number): Promise<any>;
+  getLowStockProducts(): Promise<any>;
+  updateStock(productId: number, quantity: number, token: string): Promise<any>;
+  addStock(productId: number, quantity: number, token: string): Promise<any>;
+  removeStock(productId: number, quantity: number, token: string): Promise<any>;
+  setMinQuantity(productId: number, minQuantity: number, token: string): Promise<any>;
+  createSale(sale: any, token: string): Promise<any>;
+  consumeInternal(items: any[], token: string): Promise<any>;
+  getSales(token: string): Promise<any>;
+  getSalesReport(startDate: string, endDate: string, token: string): Promise<any>;
+}
+
+export const apiClient: ApiClient = {
   async login(username: string, password: string) {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -274,6 +296,25 @@ export const apiClient = {
     
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao criar venda');
+    }
+
+    return data;
+  },
+
+  async consumeInternal(items: any[], token: string) {
+    const response = await fetch(`${API_BASE_URL}/stock/consume`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ items }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao registrar consumo interno');
     }
 
     return data;

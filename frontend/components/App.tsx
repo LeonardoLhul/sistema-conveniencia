@@ -215,6 +215,30 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Erro ao registrar venda:', error);
       alert(`Erro ao registrar venda: ${error instanceof Error ? error.message : error}`);
+      throw error;
+    }
+  };
+
+  const handleInternalConsumption = async (items: Sale['items']) => {
+    if (!user) return;
+
+    try {
+      const result = await apiClient.consumeInternal(items, user.token);
+      if (!result.success) {
+        throw new Error(result.message || 'Erro desconhecido');
+      }
+
+      setProducts(prev => prev.map(product => {
+        const consumedItem = items.find(item => item.productId === product.id);
+        if (consumedItem) {
+          return { ...product, stock: Math.max(0, product.stock - consumedItem.quantity) };
+        }
+        return product;
+      }));
+    } catch (error) {
+      console.error('Erro ao registrar consumo interno:', error);
+      alert(`Erro ao registrar consumo interno: ${error instanceof Error ? error.message : error}`);
+      throw error;
     }
   };
 
@@ -240,13 +264,13 @@ const App: React.FC = () => {
     const isCaixa = user.role === 'CAIXA';
 
     switch (view) {
-      case 'dashboard': return isAdmin || isGerente ? <Dashboard products={products} sales={sales} /> : <POS products={products} onCompleteSale={handleCompleteSale} />;
-      case 'pos': return <POS products={products} onCompleteSale={handleCompleteSale} />;
+      case 'dashboard': return isAdmin || isGerente ? <Dashboard products={products} sales={sales} /> : <POS products={products} onCompleteSale={handleCompleteSale} onInternalConsumption={handleInternalConsumption} />;
+      case 'pos': return <POS products={products} onCompleteSale={handleCompleteSale} onInternalConsumption={handleInternalConsumption} />;
       case 'inventory': return isAdmin || isGerente ? <Inventory products={products} onUpdate={handleUpdateProduct} onAdd={handleAddProduct} onDelete={handleDeleteProduct} /> : null;
       case 'history':
         // apenas ADMIN vê tudo; vendedores veem só suas vendas
         return <History sales={isAdmin || isGerente ? sales : sales.filter(s => s.userId === user.id)} />;
-      default: return <POS products={products} onCompleteSale={handleCompleteSale} />;
+      default: return <POS products={products} onCompleteSale={handleCompleteSale} onInternalConsumption={handleInternalConsumption} />;
     }
   };
 

@@ -4,7 +4,7 @@ from db import get_connection
 from auth import authenticate_user, create_user, get_user_by_token
 from products import get_all_products, get_product_by_id, create_product, update_product, delete_product, search_products
 from report import generate_sales_report
-from stock import get_stock_by_product, get_all_stock, update_stock, add_stock, remove_stock, set_min_quantity, get_low_stock_products
+from stock import get_stock_by_product, get_all_stock, update_stock, add_stock, remove_stock, set_min_quantity, get_low_stock_products, consume_internal
 from sales import get_all_sales, get_sales_by_user, create_sale
 from init_db import init_database
 from functools import wraps
@@ -331,6 +331,20 @@ def create_sale_route():
         print("create_sale result:", result)
     return jsonify(result), status
 
+@app.route("/api/stock/consume", methods=["POST"])
+@require_token
+def consume_internal_route():
+    """Baixa itens do estoque sem registrar venda."""
+    data = request.get_json() or {}
+    items = data.get('items')
+
+    if not items or not isinstance(items, list):
+        return jsonify({"success": False, "message": "Lista de itens é obrigatória"}), 400
+
+    result = consume_internal(items)
+    status = 200 if result.get('success') else 400
+    return jsonify(result), status
+
 
 
 # ============ RELATÓRIOS ============
@@ -372,4 +386,3 @@ def get_categories():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-
