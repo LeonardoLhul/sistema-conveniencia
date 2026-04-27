@@ -1,4 +1,4 @@
-# Sistema de Conveniência (Full-Stack)
+# Sistema de Conveniência
 
 Sistema para controle de vendas e estoque de uma conveniência, desenvolvido como uma aplicação full-stack com frontend e backend separados.
 
