@@ -40,18 +40,38 @@ Banco de dados:
 
 ## Estrutura do projeto
 
-/backend
-- app.py
-- auth.py
-- db.py
-- stock.py
-- report.py
+O projeto foi organizado separando as responsabilidades entre backend e frontend:
 
-/frontend
-- src/
-- components/
-- pages/
-- services/
+```txt
+sistema-conveniencia/
+│
+├── backend/
+│   ├── app.py          # Arquivo principal da API Flask
+│   ├── auth.py         # Autenticação e geração de token JWT
+│   ├── db.py           # Conexão com o banco de dados MySQL
+│   ├── stock.py        # Regras e operações relacionadas ao estoque
+│   ├── report.py       # Consultas e relatórios de vendas
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/            # Código principal da aplicação React
+│   ├── components/     # Componentes reutilizáveis da interface
+│   ├── pages/          # Páginas principais do sistema
+│   ├── services/       # Comunicação com a API
+│   └── package.json
+│
+└── README.md
+```
+# Backend
+```txtcd backend
+pip install -r requirements.txt
+python app.py
+```
+# Frontend
+```txtcd ../frontend
+npm install
+npm run dev
+```
 
 ## Como executar
 
